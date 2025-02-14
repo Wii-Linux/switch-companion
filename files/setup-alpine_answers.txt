@@ -1,0 +1,50 @@
+# Config options to pass to setup-alpine for Wii-Linux Switch Companion
+# Modified from the defaults which were created with setup-alpine -c
+
+# Use US layout with US variant
+KEYMAPOPTS=none
+
+# Set hostname to 'wii-linux-switch-companion'
+HOSTNAMEOPTS=wii-linux-switch-companion
+
+# Set device manager to udev
+DEVDOPTS=udev
+
+# Contents of /etc/network/interfaces
+INTERFACESOPTS="auto lo
+iface lo inet loopback
+"
+
+# Cloudflare DNS
+DNSOPTS="1.1.1.1"
+
+# '.local' domain name
+DOMAINNAME="local"
+
+# Set timezone to UTC
+TIMEZONEOPTS="UTC"
+
+# No proxy
+PROXYOPTS=none
+
+# Add first mirror (CDN)
+APKREPOSOPTS="-1"
+
+# No non-root user
+USEROPTS="none"
+
+# No SSH server
+SSHDOPTS=none
+
+# Use busybox ntp
+NTPOPTS="busybox"
+
+# don't mess with the disk
+DISKOPTS=none
+
+# No config storage
+LBUOPTS=none
+
+# default cache dir
+APKCACHEOPTS=none
+

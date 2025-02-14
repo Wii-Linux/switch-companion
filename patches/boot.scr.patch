@@ -1,0 +1,58 @@
+--- a/boot.scr.txt	2025-06-21 00:26:36.662429982 -0700
++++ b/boot.scr.txt	2025-06-21 00:28:16.393933754 -0700
+@@ -1,14 +1,10 @@
+ # Set defaults env variables if they do not exist.
+ setenv boot_dir ${prefix}
+ test -n ${loader_rev}           || setenv loader_rev 0
+-test -n ${id}                   || setenv id SWR-NOB
+ test -n ${emmc}                 || setenv emmc 0
+-test -n ${rootdev}              || setenv rootdev mmcblk0p2
+-test -n ${rootfstype}           || setenv rootfstype ext4
+ test -n ${rootfs_fw}            || setenv rootfs_fw /lib/firmware/
+ test -n ${rootlabel_retries}    || setenv rootlabel_retries 1
+ test -n ${auto_rootdev_disable} || setenv auto_rootdev_disable 0
+-test -n ${fbconsole}            || setenv fbconsole 9
+ test -n ${uart_port}            || setenv uart_port 0
+ test -n ${earlycon}             || setenv earlycon 0
+ test -n ${r2p_action}           || setenv r2p_action bootloader
+@@ -149,7 +145,6 @@
+
+ # Add additional bootargs for UART Logging.
+ if   test ${uart_port} = 1; then
+-	echoe UART-A logging enabled
+ 	setenv bootargs_extra ${bootargs_extra} ${uarta}
+ 	fdt set /serial@70006000 compatible nvidia,tegra20-uart
+ 	fdt set /serial@70006000 status okay
+@@ -160,7 +155,6 @@
+ 		fdt set /serial@70006000 reset-names noreset
+ 	fi
+ elif test ${uart_port} = 2; then
+-	echoe UART-B logging enabled
+ 	setenv bootargs_extra ${bootargs_extra} ${uartb}
+ 	fdt set /serial@70006040 compatible nvidia,tegra20-uart
+ 	fdt set /serial@70006040/joyconr status disabled
+@@ -171,7 +165,6 @@
+ 		fdt set /serial@70006040 reset-names noreset
+ 	fi
+ elif test ${uart_port} = 3; then
+-	echoe UART-C logging enabled
+ 	setenv bootargs_extra ${bootargs_extra} ${uartc}
+ 	fdt set /serial@70006200 compatible nvidia,tegra20-uart
+ 	fdt set /serial@70006200/joyconl status disabled
+@@ -408,13 +401,13 @@
+ fdt set /spi@7000da00/imu@0 invensense,mount-matrix "1" "0" "0" "0" "1" "0" "0" "0" "1"
+
+ # Set kernel cmdline.
+-setenv bootargs ${bootargs_extra} "root=/dev/${rootdev} rootfstype=${rootfstype} rw \
++setenv bootargs ${bootargs_extra} "rootfstype=ext4 \
+  firmware_class.path=${rootfs_fw} access=m2 \
+- rootlabel=${id} rootlabel_retries=${rootlabel_retries} \
++ rootlabel=WL-SWCOMP rootlabel_retries=${rootlabel_retries} \
+  boot_m=${devnum} boot_p=${distro_bootpart} swr_dir=${boot_dir} \
+  pmc_r2p.enabled=1 pmc_r2p.action=${r2p_action} \
+  pmc_r2p.param1=${autoboot} pmc_r2p.param2=${autoboot_list} \
+- fbcon=map:${fbconsole} consoleblank=0 \
++ fbcon=map:0 consoleblank=0 \
+  nvdec_enabled=0 tegra_fbmem=0x400000@0xf5a00000 systemd.unified_cgroup_hierarchy=0 systemd.legacy_systemd_cgroup_controller=1 splash "
+
+ # Boot kernel.

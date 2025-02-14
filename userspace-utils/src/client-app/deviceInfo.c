@@ -1,0 +1,1 @@
+../../src/menu/deviceInfo.c

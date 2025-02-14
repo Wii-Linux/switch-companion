@@ -1,0 +1,13 @@
+if [ $(tty) = /dev/tty1 ]; then
+	printf "1\t4\t1\t7" > /proc/sys/kernel/printk
+	wl-swcomp_menu
+	ret=$?
+	if [ -f ~/.debugShell ]; then
+		exec /bin/bash
+	fi
+	echo "Menu crashed with exit code $ret!"
+	sleep 3
+	exit $ret
+fi
+
+# on a seperate TTY, continue to launch a normal shell

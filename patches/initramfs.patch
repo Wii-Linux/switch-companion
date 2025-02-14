@@ -1,0 +1,134 @@
+No need for displaying images (messes up the console),
+also patch out some sanity checks, and things we don't need.
+Speeds up boot time a bit.
+--- a/extracted/init	2025-03-11 13:57:54.926951289 -0700
++++ b/extracted/init	2025-03-11 13:58:16.619687966 -0700
+@@ -104,7 +104,6 @@
+ # Set initlogo
+ echo 1 > /sys/class/graphics/fb0/blank
+ echo 0 > /sys/class/graphics/fb0/state
+-ply-image /logo.png
+ echo 0 > /sys/class/graphics/fb0/blank
+
+ echo "[ INITRAMFS ] L4T-INITRAMFS START" > /dev/kmsg
+@@ -169,7 +168,6 @@
+ 		echo "[ INITRAMFS ] Found dev node: ${rootdev}" > /dev/kmsg
+
+ 		echo "[ INITRAMFS ] Checking dev node for errors" > /dev/kmsg
+-		ply-image /logo_checking.png --location=476,461
+ 		fsck -y ${rootdev}
+
+ 		echo "[ INITRAMFS ] Mounting dev node" > /dev/kmsg
+@@ -184,12 +182,6 @@
+ fi
+
+ # Set screen status
+-if [[ -f mnt/etc/switchroot_version.conf ]]; then
+-	ply-image /logo_mounted.png --location=476,461
+-else
+-	fatal_error "${rootdev} not a switchroot installation..."
+-fi
+-
+ echo "[ INITRAMFS ] Rootfs mounted over ${rootdev}" > /dev/kmsg
+
+ if ! cd /mnt; then
+@@ -212,7 +204,6 @@
+ 		if [[ -f /mnt/boot/${SWR_DIR}/.reinit ]]; then
+ 			echo "[ INITRAMFS ] Reinitializing kernel modules and config" > /dev/kmsg
+ 			if [[ -f /mnt/opt/switchroot/modules.tar.gz ]]; then
+-				ply-image /logo_update.png --location=476,461
+ 				echo "[ INITRAMFS ] Deleting old modules" > /dev/kmsg
+ 				rm -r /mnt/lib/modules/*
+ 				echo "[ INITRAMFS ] Extracting new modules" > /dev/kmsg
+@@ -223,7 +214,6 @@
+ 			fi
+
+ 			if [[ -f /mnt/opt/switchroot/update.tar.gz ]]; then
+-				ply-image /logo_update.png --location=476,461
+ 				echo "[ INITRAMFS ] Extracting update.tar.gz" > /dev/kmsg
+ 				if tar --keep-directory-symlink -zxpf /mnt/opt/switchroot/update.tar.gz -C /mnt/; then
+ 					rm /mnt/opt/switchroot/update.tar.gz; echo "[ INITRAMFS ] Extract success" > /dev/kmsg
+@@ -516,32 +506,6 @@
+ fi
+ # BOOT_DEV_FOUND} == "true" END
+
+-# Set btmac in firmware
+-if [[ ${BT_MAC_ADDR} == *":"* ]]; then
+-  BT_MAC_ADDR=$( echo ${BT_MAC_ADDR} | tr -d ':' )
+-fi
+-BT_MAC_ADDR=${BT_MAC_ADDR^^}
+-
+-# Convert to little endian for firmware comparison and injection....
+-i=${#BT_MAC_ADDR}
+-
+-while [ $i -gt 0 ]
+-do
+-	i=$((i-2))
+-	CONVERTED_MAC=${CONVERTED_MAC}$( echo -n "${BT_MAC_ADDR:$i:2}" )
+-done
+-NEW_BT_MAC=${CONVERTED_MAC};
+-CONVERTED_MAC=$( echo $CONVERTED_MAC | sed 's/../\\x&/g' )
+-if [[ -f /mnt/lib/firmware/brcm/BCM4356A3.hcd ]]; then
+-   # Dump current mac to variable
+-   CURRENT_BT_MAC=$(chroot /mnt /usr/bin/xxd -p  -s 0x21 -l 6 -u /lib/firmware/brcm/BCM4356A3.hcd)
+-   if [[ ! ${CURRENT_BT_MAC} == ${NEW_BT_MAC} ]]; then
+-	   # Write converted_mac to firmware file at 0x21 - 0x26
+-	   printf $CONVERTED_MAC | dd of=/mnt/lib/firmware/brcm/BCM4356A3.hcd bs=1 seek=33 count=6 conv=notrunc
+-	   echo "[ INITRAMFS ] BD address patched" > /dev/kmsg
+-   fi
+-fi
+-
+ # Set WiFi MAC.
+ NEW_WIFI_MAC=$(cat /sys/firmware/devicetree/base/chosen/nvidia,wifi-mac)
+ if [[ -z ${NEW_WIFI_MAC} ]]; then NEW_WIFI_MAC="98:B6:E9:00:00:01"; fi
+@@ -556,13 +520,6 @@
+ 	fi
+ fi
+
+-# Patch bluez config to enable fast connect, required or joycon wont connect and enable multiple audio profile switching.
+-sed -E -i 's/#FastConnectable = false/FastConnectable = true/' /mnt/etc/bluetooth/main.conf
+-sed -E -i 's/#MultiProfile = off/MultiProfile = multiple/' /mnt/etc/bluetooth/main.conf
+-
+-# Patch turul with ports in apt sources list
+-sed -E -i 's/turul.canonical/ports.ubuntu/g' /mnt/etc/apt/sources.list
+-
+ # Set hw limit to sw limit for max allowed block count for transfers
+ if [ -e "/sys/block/mmcblk0" ]; then
+ 	echo $(cat /sys/block/mmcblk0/queue/max_hw_sectors_kb) > /sys/block/mmcblk0/queue/max_sectors_kb
+@@ -571,12 +528,6 @@
+ 	echo $(cat /sys/block/mmcblk1/queue/max_hw_sectors_kb) > /sys/block/mmcblk1/queue/max_sectors_kb
+ fi
+
+-# Init ZRAM with 3072MB total
+-echo lz4 > /sys/block/zram0/comp_algorithm
+-echo 3072M > /sys/block/zram0/disksize
+-/sbin/mkswap /dev/zram0
+-/sbin/swapon -p 5 /dev/zram0
+-
+ # Fix permissions for r2p
+ chmod 0666 /sys/devices/r2p/action
+ chmod 0666 /sys/devices/r2p/entry_id
+@@ -623,17 +574,7 @@
+ fi
+
+
+-# Set booting message.
+-ply-image /logo_booting.png --location=476,461
+-
+ echo "[ INITRAMFS ] Switching from initrd to actual rootfs" > /dev/kmsg
+-init_path="/sbin/init"
+-if [[ -L sbin/init ]]; then
+-	# sed absolutely needs double quotes here
+-	init_path=$(ls -l sbin/init | sed -n "s/.*\\-> \(.*\)/\1/p")
+-	echo "[ INITRAMFS ] Found symlinked init: ${init_path}!" > /dev/kmsg
+-fi
+-
+ echo "[ INITRAMFS ] L4T-INITRAMFS END" > /dev/kmsg
+ # Prep mountpoints.
+ umount /mnt/boot
+@@ -643,4 +584,4 @@
+ mount --move /dev /mnt/dev
+
+ # Swap rootfs and boot.
+-exec switch_root . ${init_path} 2
++exec switch_root . "/sbin/init"
